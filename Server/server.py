@@ -54,8 +54,8 @@ async def predict(data: UserData):
         input_df = pd.DataFrame([{
             'BMI': data.bmi,
             '나이': data.age,
-            '혈당': glucose,
             '피부두께': skin,
+            '혈당': glucose,
             'Abdominal_Glucose_Risk': abdominal_risk,
             '가족력로그': totalRawScore
         }])
