@@ -21,14 +21,32 @@ class _HomeState extends State<Home> {
   TextEditingController glucoseController = TextEditingController();
   double glucose = 0.0;
   int age = 0;
-  double skinTickness = 0.0;
   double bmi = 0.0;
-  bool isParent = false;
-  bool isSiblings = false;
-  bool isGrandparents = false;
-  Color backgroundColor = Color.fromARGB(251, 10, 4, 94);
-  Color suyellow = Color(0xFFF8DE7D);
+
+  String result = ''; 
+
+  Color backgroundColor = Color.fromARGB(249, 247, 247, 226);
+  Color textColor = Color(0xFF39393F);
+
+  List<String> parentsList = ["0 ", "1 ", "2 "];
+  List<String> siblingsList = ["0", "1", "2", "3+"];
+  List<String> grandparentsList = ["0 ", "1 ", "2 ", "3 ", "4 "];
+
+  late String selectParent;
+  late String selectsiblings;
+  late String selectGrandparents;
+
   String _resultMessage = "정보를 입력하고 예측 버튼을 눌러주세요.";
+
+  @override
+  void initState() {
+    super.initState();
+
+    selectParent = parentsList[0];
+    selectsiblings = siblingsList[0];
+    selectGrandparents = grandparentsList[0];
+  }
+
   @override
   void dispose() {
     ageController.dispose();
@@ -43,7 +61,7 @@ class _HomeState extends State<Home> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text('당뇨 예측', style: _buildTextStyle(25)),
+        title: Text('AI 당뇨 예측 앱', style: _buildTextStyle(25)),
         backgroundColor: backgroundColor,
         centerTitle: true,
         actions: [
@@ -51,31 +69,49 @@ class _HomeState extends State<Home> {
             onPressed: () {
               reset();
             },
-            icon: Icon(Icons.refresh, color: suyellow, size: 30),
+            icon: Icon(Icons.refresh, color: textColor, size: 30),
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              _buildInputText(ageController, '나이(필수)'),
-              _buildInputText(heightController, '키(필수)'),
-              _buildInputText(weightController, '몸무게(필수)'),
-              _buildInputText(glucoseController, '혈당(선택)', true),
-              _buildPedigree(),
-              Text(_resultMessage, style: _buildTextStyle(15)),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    checkValue();
-                  },
-                  child: Text('예측 시도', style: TextStyle(fontSize: 25)),
-                ),
+      body: GestureDetector(
+        onTap: () {
+          Focus.of(context).unfocus();
+        },
+        child: SingleChildScrollView(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInputText('나이', ageController, '20세'),
+                  _buildHeightWeight(),
+                  _buildGlucose('공복 혈당(선택)', glucoseController, '80mg/dL'),
+                  _buildPedigree(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_resultMessage, style: _buildTextStyle(20),maxLines: 4,),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                          onPressed: () {
+                            checkValue();
+                          },
+                          child: Text('예측 시도', style: TextStyle(fontSize: 25, color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -84,75 +120,153 @@ class _HomeState extends State<Home> {
 
   // === Widget ===
 
-  Widget _buildInputText(
+
+  Widget _buildGlucose(String txt,
     TextEditingController controller,
-    String txt, [
-    bool isOption = false,
-  ]) {
+    String hint)
+  {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          SizedBox(width: 130, child: Text(txt, style: _buildTextStyle(22))),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              keyboardType: TextInputType.numberWithOptions(),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hint: isOption
-                    ? Text('선택', style: _buildTextStyle(20))
-                    : Text(''),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+              child:Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(txt,style: TextStyle(color: textColor, fontSize: 20),),
+                  SizedBox(height: 5,),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          keyboardType: TextInputType.numberWithOptions(),
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hint: Text(hint, style: TextStyle(color: Colors.black45,fontSize: 18))
+                          ),
+                          style: _buildTextStyle(20),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text('입력하지 않아도 예측 가능하나 정확도가 낮아 질 수 있어요.', style: TextStyle(color: Colors.red, fontSize: 14),),
+
+                ],
               ),
-              style: _buildTextStyle(20),
-            ),
-          ),
-        ],
-      ),
+    );
+  }
+  Widget _buildInputText(
+    String txt,
+    TextEditingController controller,
+    String hint) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+              child:Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(txt,style: TextStyle(color: textColor, fontSize: 20),),
+                  SizedBox(height: 5,),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          keyboardType: TextInputType.numberWithOptions(),
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hint: Text(hint, style: TextStyle(color: Colors.black45,fontSize: 18))
+                          ),
+                          style: _buildTextStyle(20),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
     );
   } // _buildInputText
 
-  TextStyle _buildTextStyle(double size) {
-    return TextStyle(color: suyellow, fontSize: size);
-  }
-
-  Widget _buildPedigree() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+  Widget _buildHeightWeight()
+  {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('가족 중에 당뇨 환자가 있으신가요?', style: _buildTextStyle(20)),
-        returnCheckBox('부모님', isParent, (value) {
-          setState(() {
-            isParent = value!;
-          });
-        },),
-        returnCheckBox('형제 자매', isSiblings,(value) {
-          setState(() {
-            isSiblings = value!;
-          });
-        },),
-        returnCheckBox('조부모님', isGrandparents,(value) {
-          setState(() {
-            isGrandparents = value!;
-          });
-        },),
+        SizedBox(
+          width: MediaQuery.of(context).size.width * 0.45,
+          child: Column(
+            children: [
+            _buildInputText('키',heightController, '180cm'),
+            ]
+          ),
+        ),
+        SizedBox(
+          width: MediaQuery.of(context).size.width * 0.45,
+          child: Column(
+            children: [
+              _buildInputText('몸무게',weightController, '80kg'),
+            ],
+          ),
+        )
       ],
     );
   }
 
-  Widget returnCheckBox(String txt, bool b, Function(bool?) onChanged) { // onChanged 추가
-  return Row(
-    children: [
-      Checkbox(
-        value: b,
-        activeColor: suyellow, // 디자인 일관성을 위해 추가
-        checkColor: backgroundColor,
-        onChanged: onChanged, // 매개변수로 받은 함수 연결
-      ),
-      Text(txt, style: _buildTextStyle(22)),
-    ],
-  );
-}
+
+
+  TextStyle _buildTextStyle(double size) {
+    return TextStyle(color: textColor, fontSize: size);
+  }
+
+  Widget _buildPedigree() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('가족 중에 당뇨 진단을 받으신 분이 몇 분 인가요?', style: _buildTextStyle(18)),
+        _buildDropdownButtoon('부모님', selectParent, parentsList, (value) {
+          setState(() {
+            selectParent = value!;
+          });
+        }),
+        _buildDropdownButtoon('형제 자매', selectsiblings, siblingsList, (value) {
+          setState(() {
+            selectsiblings = value!;
+          });
+        }),
+        _buildDropdownButtoon('조부모님', selectGrandparents, grandparentsList, (value) {
+          setState(() {
+            selectGrandparents = value!;
+          });
+        }),
+      ],
+    );
+  }
+
+  Widget _buildDropdownButtoon(
+    String txt,
+    String select,
+    List<String> list,
+    Function(String?) onChanged,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 150,
+          child: Text(txt, style: _buildTextStyle(20),textAlign: TextAlign.start,)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: SizedBox(
+            width: 80,
+            child: DropdownButton(
+              value: select,
+              items: list
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e, style: TextStyle(fontSize: 18),)))
+                  .toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   // === Function ===
 
@@ -161,13 +275,12 @@ class _HomeState extends State<Home> {
     heightController.text = "";
     weightController.text = "";
     glucoseController.text = "";
-    isParent = false;
-    isSiblings = false;
-    isGrandparents = false;
+    selectParent = parentsList[0];
+    selectsiblings = siblingsList[0];
+    selectGrandparents = grandparentsList[0];
+    result = "";
     _resultMessage = "정보를 입력하고 예측 버튼을 눌러주세요.";
-    setState(() {
-      
-    });
+    setState(() {});
   }
 
   void checkValue() {
@@ -191,51 +304,36 @@ class _HomeState extends State<Home> {
     );
   }
 
-  double calcBMI() {
-    var h = double.parse(heightController.text)/100;
+  void calcBMI() {
+    var h = double.parse(heightController.text) / 100;
     var w = double.parse(weightController.text);
-    return double.parse((w / (h * h)).toStringAsFixed(1));
+    bmi = double.parse((w / (h * h)).toStringAsFixed(1));
+
+    if(bmi < 18.5) result = '저체중';
+    else if(bmi <= 22.9) result = '정상';
+    else if(bmi <= 24.9) result = '과체중';
+    else if(bmi <= 29.9) result = '비만';
+    else if(bmi <= 34.9) result = '고도비만';
+    else result = '초고도비만';
+    
   }
 
-  double calcPedigreeScore()
-  {
-    double score = 0.078; // 최소값 기준
-    if (isParent) score += 1.0;
-    if (isSiblings) score += 0.8;
-    if (isGrandparents) score += 0.5;
-    var pedigreeScore = double.parse(math.log(1 + score).toStringAsFixed(4));
-    print('pedigreeScore : $pedigreeScore / $score');
-    return pedigreeScore; 
-  }
-
-  double calcGlucose()
-  {
-    var g = (0.9806825594100111 * bmi) + (0.6817116341473727 * age) + 65.60660909858092;
-    print('Glucose : ${g}');
-    return g;
-  }
-
-  double calcTickness()
-  {
-    var  slope = 0.95 ;
+  double calcTickness() {
+    var slope = 0.95;
     var intercept = -2.5;
     var tickness = (slope * bmi) + intercept;
-    print('tickness : ${tickness}');
-    return(slope * bmi) + intercept;
+    return tickness;//(slope * bmi) + intercept;
   }
 
   Future<void> _predictDiabetes() async {
     const url = 'http://192.168.0.17:8000/predict'; // 실제 폰 테스트 시엔 로컬 IP 주소 사용
-    
-    bmi = calcBMI();
+
+    calcBMI();
     print('bmi : $bmi');
     age = int.parse(ageController.text);
-    if(glucoseController.text.isEmpty)
-    {
-      glucose = calcGlucose();
-    }
-    else
-    {
+    if (glucoseController.text.isEmpty) {
+      glucose = 0;
+    } else {
       glucose = double.parse(glucoseController.text);
     }
     try {
@@ -246,20 +344,21 @@ class _HomeState extends State<Home> {
           'glucose': glucose,
           'bmi': bmi,
           'age': age,
-          'pedigree_log': calcPedigreeScore(),
-          'skin' : calcTickness()
+          'parents': int.parse(selectParent),
+          'siblings': selectsiblings == '3+' ? 3: int.parse(selectsiblings),
+          'grandparents': int.parse(selectGrandparents),
+          'skin': calcTickness(),
         }),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          _resultMessage = "결과: ${data['result']}\n확률: ${data['probability']}%";
+          _resultMessage = "당신의 BMI는 $bmi이고 $result입니다.\n당뇨 예측 결과는 ${data['result']}이며\n당뇨일 확률은 ${data['probability']}%입니다.";
         });
       }
     } catch (e) {
       setState(() {
         _resultMessage = "에러가 발생했습니다: $e";
-        print(_resultMessage);
       });
     }
   }

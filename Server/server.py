@@ -25,27 +25,39 @@ class UserData(BaseModel):
     glucose: float
     bmi: float
     age: int
-    pedigree_log: float
-    skin:float
+    parents: int
+    siblings: int
+    grandparents:int
+    # skin:float
 
 # --- 3. 예측 엔드포인트 ---
 @app.post("/predict")
 async def predict(data: UserData):
     try:
-        # 1. BMI 기반 파생변수 생성 (허리둘레 미사용 시)
-        current_bmi = data.bmi
-        risk_factor = (current_bmi ** 1.2) / 10
-        abdominal_risk = (data.glucose * risk_factor) / 100
+        glucose = data.glucose
+        if glucose == 0:
+            glucose = (0.9806825594100111 * data.bmi) + (0.6817116341473727 * data.age) + 65.60660909858092
+        
+        skin =  (0.7320350425409223 * data.bmi) + (0.07081157992000305 * data.age) +  2.8965508352678846    
 
-        # 2. 모델 학습 시 순서 그대로 배열 생성
-        # [혈당, BMI, 나이, 가족력_로그, 복부위험지수]
+        baseScore = 0.078; 
+
+        pScore = 1.0 * np.log10(1 + data.parents)
+        sScore = 0.8 * np.log10(1 + data.siblings)
+        gScore = 0.5 * np.log10(1 + data.grandparents)
+
+        totalRawScore = baseScore + pScore + sScore + gScore;    
+        
+        risk_factor = (data.bmi ** 1.2) / 10
+        abdominal_risk = (glucose * risk_factor) / 100
+
         input_df = pd.DataFrame([{
             'BMI': data.bmi,
             '나이': data.age,
-            '혈당': data.glucose,
-            '피부두께': data.skin,
+            '혈당': glucose,
+            '피부두께': skin,
             'Abdominal_Glucose_Risk': abdominal_risk,
-            '가족력로그': data.pedigree_log
+            '가족력로그': totalRawScore
         }])
 
         # 3. Scaler 적용 (중요!)
